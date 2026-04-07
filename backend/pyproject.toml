@@ -1,0 +1,40 @@
+[project]
+name = "ragops-backend"
+version = "0.1.0"
+description = "RAGOps Studio backend - FastAPI + LangChain + Elasticsearch"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    "elasticsearch[async]>=8.13.0",
+    "aiohttp>=3.10.0",
+    "langchain>=0.3.0",
+    "langchain-elasticsearch>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langgraph>=0.2.0",
+    "python-multipart>=0.0.12",
+    "httpx>=0.27.0",
+    "pypdf>=5.0.0",
+    "python-docx>=1.1.2",
+    # WIP: RAGAS 평가 파이프라인 보류 중. 재개 시 아래 두 줄 주석 해제 + `app/api/v1/router.py`의
+    # evaluation 라인도 함께 활성화. 코드(eval_service, evaluation 라우터, schemas/eval)는 유지됨.
+    # "ragas>=0.2.0",
+    # "datasets>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
