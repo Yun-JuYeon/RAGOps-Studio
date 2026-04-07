@@ -27,4 +27,5 @@ class Citation(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+    search_query: str | None = None  # extract_keywords 가 만든 검색용 쿼리
     citations: list[Citation] = []
