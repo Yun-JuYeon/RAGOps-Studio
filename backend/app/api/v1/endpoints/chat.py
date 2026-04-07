@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.rag.graph import MissingLLMError
+from app.rag.state import MissingLLMError
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.rag_service import RagService, get_rag_service
 

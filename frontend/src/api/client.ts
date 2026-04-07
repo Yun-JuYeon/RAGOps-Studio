@@ -68,6 +68,7 @@ export type Citation = {
 
 export type ChatResponse = {
   answer: string;
+  search_query?: string | null;
   citations: Citation[];
 };
 

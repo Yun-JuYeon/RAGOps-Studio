@@ -21,6 +21,7 @@ type Msg = {
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
+  searchQuery?: string | null;
 };
 
 function CitationList({ citations }: { citations: Citation[] }) {
@@ -100,7 +101,12 @@ export default function ChatPage() {
       });
       setMessages([
         ...next,
-        { role: "assistant", content: r.answer, citations: r.citations },
+        {
+          role: "assistant",
+          content: r.answer,
+          citations: r.citations,
+          searchQuery: r.search_query,
+        },
       ]);
     } catch (e) {
       setMessages([...next, { role: "assistant", content: (e as Error).message }]);
@@ -196,6 +202,12 @@ export default function ChatPage() {
                 </Badge>
                 <div className="whitespace-pre-wrap">{m.content}</div>
               </div>
+              {m.role === "assistant" && m.searchQuery && (
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  <span className="font-semibold">검색 키워드:</span>{" "}
+                  <span className="font-mono">{m.searchQuery}</span>
+                </p>
+              )}
               {m.role === "assistant" && m.citations && m.citations.length > 0 && (
                 <CitationList citations={m.citations} />
               )}

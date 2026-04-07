@@ -2,7 +2,7 @@ from time import perf_counter
 from typing import Any
 
 from elasticsearch import AsyncElasticsearch
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 
 from app.core.config import settings
 from app.db.elasticsearch import get_es_client, list_user_index_names
@@ -279,8 +279,9 @@ class ElasticsearchService:
         return hits, total
 
 
-def get_es_service(
-    client: AsyncElasticsearch = Depends(get_es_client),
-    embedder: EmbeddingService = Depends(get_embedding_service),
-) -> ElasticsearchService:
-    return ElasticsearchService(client, embedder)
+def get_es_service() -> ElasticsearchService:
+    """ES 서비스 인스턴스. FastAPI Depends 와 일반 호출 모두 동일하게 사용 가능.
+
+    내부의 client/embedder 는 모두 싱글톤이라 매 호출이 가벼움.
+    """
+    return ElasticsearchService(get_es_client(), get_embedding_service())
