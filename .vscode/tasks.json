@@ -15,16 +15,13 @@
         "owner": "vite",
         "pattern": [
           {
-            "regexp": ".",
-            "file": 1,
-            "location": 2,
-            "message": 3
+            "regexp": "^$"
           }
         ],
         "background": {
           "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "ready in"
+          "beginsPattern": "^",
+          "endsPattern": "ready in|VITE|Local:"
         }
       }
     },

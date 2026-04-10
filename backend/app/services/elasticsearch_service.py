@@ -1,3 +1,4 @@
+import asyncio
 from time import perf_counter
 from typing import Any
 
@@ -7,7 +8,7 @@ from fastapi import HTTPException
 from app.core.config import settings
 from app.db.elasticsearch import get_es_client, list_user_index_names
 from app.schemas.index import IndexInfo
-from app.schemas.search import SearchHit, SearchRequest, SearchResponse
+from app.schemas.search import SearchHit, SearchMode, SearchRequest, SearchResponse
 from app.services.embedding_service import EmbeddingService, get_embedding_service
 
 RRF_K = 60  # Reciprocal Rank Fusion 의 k 상수 (보통 60)
@@ -110,7 +111,7 @@ class ElasticsearchService:
             index = ",".join(names)
 
         # dense / hybrid 는 임베딩 필수. 없으면 폴백 없이 명시적 에러.
-        if req.mode in ("dense", "hybrid") and not self.embedder.is_available:
+        if req.mode in (SearchMode.DENSE, SearchMode.HYBRID) and not self.embedder.is_available:
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -121,11 +122,11 @@ class ElasticsearchService:
             )
 
         started = perf_counter()
-        if req.mode == "bm25":
+        if req.mode == SearchMode.BM25:
             hits, total = await self._search_bm25(index, req)
-        elif req.mode == "dense":
+        elif req.mode == SearchMode.DENSE:
             hits, total = await self._search_dense(index, req)
-        else:  # hybrid
+        else:
             hits, total = await self._search_hybrid_rrf(index, req)
         took_ms = int((perf_counter() - started) * 1000)
 
@@ -210,8 +211,6 @@ class ElasticsearchService:
         """
         # 각 ranking 에서 top_k * 2 정도를 가져와 머지 풀을 넓힘
         pool = max(req.top_k * 2, 20)
-        # 두 검색을 병렬로 (asyncio.gather)
-        import asyncio
 
         async def _bm25() -> dict[str, Any]:
             query: dict[str, Any] = {"match": {"text": req.query}}

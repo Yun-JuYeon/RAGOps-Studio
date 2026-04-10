@@ -174,41 +174,67 @@ export default function SearchPage() {
           {resp.hits.length === 0 && (
             <p className="text-sm text-muted-foreground">결과가 없습니다.</p>
           )}
-          {resp.hits.map((h, i) => (
-            <Card key={`${h.index}-${h.id}`}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">#{i + 1}</Badge>
-                    {h.index && (
-                      <Badge variant="secondary" className="font-mono">
-                        {h.index}
-                      </Badge>
-                    )}
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {h.id}
-                    </span>
+          {resp.hits.map((h, i) => {
+            const text = h.source.text as string | undefined;
+            const metadata = h.source.metadata as Record<string, unknown> | undefined;
+            return (
+              <Card key={`${h.index}-${h.id}`}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">#{i + 1}</Badge>
+                      {h.index && (
+                        <Badge variant="secondary" className="font-mono">
+                          {h.index}
+                        </Badge>
+                      )}
+                      {metadata?.filename && (
+                        <Badge variant="outline" className="font-mono">
+                          {String(metadata.filename)}
+                        </Badge>
+                      )}
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {h.id}
+                      </span>
+                    </div>
+                    <Badge variant="secondary">score {h.score.toFixed(3)}</Badge>
                   </div>
-                  <Badge variant="secondary">score {h.score.toFixed(3)}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <pre className="whitespace-pre-wrap text-sm">
-                  {JSON.stringify(h.source, null, 2)}
-                </pre>
-                {h.highlight?.text && (
-                  <div className="mt-3 rounded-md bg-yellow-50 p-2 text-xs">
-                    {h.highlight.text.map((frag, idx) => (
-                      <div
-                        key={idx}
-                        dangerouslySetInnerHTML={{ __html: frag }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent>
+                  {text && (
+                    <pre className="mb-2 whitespace-pre-wrap text-sm">{text}</pre>
+                  )}
+                  {metadata && Object.keys(metadata).length > 0 && (
+                    <div className="rounded-md bg-muted/30 p-2 text-xs text-muted-foreground">
+                      {Object.entries(metadata).map(([k, v]) => (
+                        <span key={k} className="mr-3">
+                          <span className="font-semibold">{k}:</span> {String(v)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {h.highlight?.text && (
+                    <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-xs">
+                      <span className="mb-1 block text-[10px] font-semibold text-yellow-700">
+                        하이라이트
+                      </span>
+                      {h.highlight.text.map((frag, idx) => (
+                        <div
+                          key={idx}
+                          dangerouslySetInnerHTML={{
+                            // ES highlight 는 <em> 태그만 사용. 악의적 HTML 제거.
+                            __html: frag
+                              .replace(/<(?!\/?em\b)[^>]*>/g, "")
+                              .replace(/on\w+="[^"]*"/gi, ""),
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

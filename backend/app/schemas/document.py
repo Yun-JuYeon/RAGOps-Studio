@@ -1,12 +1,12 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DocumentIngestRequest(BaseModel):
     index: str | None = None
     text: str
-    metadata: dict[str, Any] = {}
+    metadata: dict[str, Any] = Field(default_factory=dict)
     chunk_size: int = 800
     chunk_overlap: int = 100
 

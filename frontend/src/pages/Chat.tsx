@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +76,12 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [indexFilter, setIndexFilter] = useState<string>(ALL_INDICES);
   const [topK, setTopK] = useState(8);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 메시지가 추가되면 자동으로 맨 아래로 스크롤
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   const onSend = async () => {
     if (!input.trim()) return;
@@ -214,6 +220,7 @@ export default function ChatPage() {
             </div>
           ))}
           {loading && <p className="text-sm text-muted-foreground">생각 중…</p>}
+          <div ref={chatEndRef} />
         </CardContent>
         <div className="border-t p-3">
           <div className="flex gap-2">
