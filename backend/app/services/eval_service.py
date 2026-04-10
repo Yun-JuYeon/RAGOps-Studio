@@ -145,7 +145,7 @@ class EvalService:
 
         try:
             # 1) RAG 파이프라인을 각 question에 돌려 answer/contexts 수집
-            graph = build_rag_graph(self.client)
+            graph = build_rag_graph()
             item_results: list[EvalItemResult] = []
             for item in dataset.items:
                 state = await graph.ainvoke(

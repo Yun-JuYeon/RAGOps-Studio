@@ -7,13 +7,13 @@ extract_keywords 가 만든 search_query 를 사용해 ElasticsearchService.sear
 from typing import Any
 
 from app.rag.state import RagState
-from app.schemas.search import SearchRequest
+from app.schemas.search import SearchMode, SearchRequest
 from app.services.elasticsearch_service import get_es_service
 
 
 async def retrieve(state: RagState) -> RagState:
     es_service = get_es_service()
-    mode = "hybrid" if es_service.embedder.is_available else "bm25"
+    mode = SearchMode.HYBRID if es_service.embedder.is_available else SearchMode.BM25
     query = state.get("search_query") or state.get("question", "")
     req = SearchRequest(
         query=query,

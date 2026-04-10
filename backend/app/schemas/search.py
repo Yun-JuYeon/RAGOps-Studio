@@ -1,12 +1,19 @@
-from typing import Any, Literal
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel
+
+
+class SearchMode(StrEnum):
+    BM25 = "bm25"
+    DENSE = "dense"
+    HYBRID = "hybrid"
 
 
 class SearchRequest(BaseModel):
     index: str | None = None
     query: str
-    mode: Literal["bm25", "dense", "hybrid"] = "hybrid"
+    mode: SearchMode = SearchMode.HYBRID
     top_k: int = 10
     filters: dict[str, Any] | None = None
 
