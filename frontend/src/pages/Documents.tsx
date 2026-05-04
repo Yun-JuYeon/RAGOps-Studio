@@ -38,8 +38,8 @@ import {
 import { useHealth } from "@/hooks/useHealth";
 import { api, type UploadResponse } from "@/api/client";
 import { cn } from "@/lib/utils";
+import { DEFAULT_INDEX } from "@/lib/config";
 
-const DEFAULT_INDEX = "ragops-documents";
 const ACCEPTED = ".pdf,.docx,.txt,.md,.markdown";
 
 function formatBytes(bytes: number): string {

@@ -1,6 +1,7 @@
 import asyncio
+from functools import lru_cache
 from time import perf_counter
-from typing import Any
+from typing import Any, cast
 
 from elasticsearch import AsyncElasticsearch
 from fastapi import HTTPException
@@ -44,7 +45,8 @@ class ElasticsearchService:
     # ---------- Index management ----------
 
     async def list_indices(self) -> list[IndexInfo]:
-        rows = await self.client.cat.indices(format="json", bytes="b")
+        resp = await self.client.cat.indices(format="json", bytes="b")
+        rows = cast(list[dict[str, Any]], resp.body)
         result: list[IndexInfo] = []
         for row in rows:
             name = row.get("index", "")
@@ -212,7 +214,7 @@ class ElasticsearchService:
         # 각 ranking 에서 top_k * 2 정도를 가져와 머지 풀을 넓힘
         pool = max(req.top_k * 2, 20)
 
-        async def _bm25() -> dict[str, Any]:
+        async def _bm25():
             query: dict[str, Any] = {"match": {"text": req.query}}
             filters = self._filter_clause(req)
             if filters:
@@ -229,7 +231,7 @@ class ElasticsearchService:
                 allow_no_indices=True,
             )
 
-        async def _knn() -> dict[str, Any]:
+        async def _knn():
             query_vector = await self.embedder.embed_query(req.query)
             if query_vector is None:
                 raise HTTPException(status_code=500, detail="임베딩 생성 실패")
@@ -259,7 +261,7 @@ class ElasticsearchService:
         scores: dict[tuple[str, str], float] = {}
         docs: dict[tuple[str, str], dict] = {}
 
-        def _accumulate(resp: dict[str, Any]) -> None:
+        def _accumulate(resp) -> None:
             for rank, h in enumerate(resp["hits"]["hits"]):
                 key = (h.get("_index") or "", h["_id"])
                 scores[key] = scores.get(key, 0.0) + 1.0 / (RRF_K + rank + 1)
@@ -273,14 +275,13 @@ class ElasticsearchService:
         ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[: req.top_k]
         hits = [self._hit(docs[key], score_override=score) for key, score in ranked]
 
-        # total 은 두 결과의 union 크기 (정확한 ES total 보다 의미 있음)
+        # total 은 BM25 + kNN union 의 근사치. 정확한 ES total 과는 다르며
+        # 프론트에서는 "약 N건(hybrid 근사)" 정도로 표기하는 편이 정확함.
         total = len(scores)
         return hits, total
 
 
+@lru_cache(maxsize=1)
 def get_es_service() -> ElasticsearchService:
-    """ES 서비스 인스턴스. FastAPI Depends 와 일반 호출 모두 동일하게 사용 가능.
-
-    내부의 client/embedder 는 모두 싱글톤이라 매 호출이 가벼움.
-    """
+    """ES 서비스 싱글톤. 내부 client/embedder 가 싱글톤이므로 서비스도 한 번만 생성."""
     return ElasticsearchService(get_es_client(), get_embedding_service())

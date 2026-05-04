@@ -1,6 +1,9 @@
+import json
 from functools import lru_cache
+from typing import Annotated
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -23,8 +26,23 @@ class Settings(BaseSettings):
     embedding_dims: int = 1536  # text-embedding-3-small 기준. 모델 바꾸면 같이 바꿀 것.
     llm_model: str = "gpt-4o-mini"
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:5173"]
+    # CORS — .env 에서는 쉼표 구분 문자열 또는 JSON 배열 모두 허용.
+    #   CORS_ORIGINS=http://localhost:5173,https://ragops.example.com
+    #   CORS_ORIGINS=["http://localhost:5173"]
+    # NoDecode: pydantic-settings 가 list 필드를 JSON 으로 미리 파싱하는 동작을 끈다.
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, v: object) -> object:
+        if not isinstance(v, str):
+            return v
+        s = v.strip()
+        if not s:
+            return []
+        if s.startswith("["):
+            return json.loads(s)
+        return [item.strip() for item in s.split(",") if item.strip()]
 
 
 @lru_cache
