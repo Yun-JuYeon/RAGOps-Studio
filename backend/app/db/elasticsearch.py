@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from elasticsearch import AsyncElasticsearch
 
 from app.core.config import settings
@@ -6,7 +8,6 @@ _client: AsyncElasticsearch | None = None
 
 
 def get_es_client() -> AsyncElasticsearch:
-    """Return a process-wide AsyncElasticsearch singleton."""
     global _client
     if _client is None:
         auth = None
@@ -27,14 +28,10 @@ async def close_es_client() -> None:
 
 
 async def list_user_index_names(client: AsyncElasticsearch) -> list[str]:
-    """시스템 인덱스(.으로 시작)를 제외한 사용자 인덱스 이름 목록.
-
-    "전체 인덱스" 검색 시 어떤 인덱스를 대상으로 할지 결정하는 단일 진실 원천.
-    인덱스 페이지(`list_indices`)와 동일한 필터링 규칙을 사용한다.
-    """
-    rows = await client.cat.indices(format="json", h="index")
+    resp = await client.cat.indices(format="json", h="index")
+    rows = cast(list[dict[str, Any]], resp.body)
     return [
-        r["index"]
+        name
         for r in rows
-        if r.get("index") and not r["index"].startswith(".")
+        if (name := r.get("index")) and not name.startswith(".")
     ]

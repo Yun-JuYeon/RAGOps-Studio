@@ -1,9 +1,3 @@
-"""retrieve 노드.
-
-extract_keywords 가 만든 search_query 를 사용해 ElasticsearchService.search() 호출.
-검색 페이지와 동일한 hybrid + RRF 로직 (임베더가 없으면 BM25).
-"""
-
 from typing import Any
 
 from app.rag.state import RagState
@@ -37,17 +31,4 @@ async def retrieve(state: RagState) -> RagState:
             }
         )
 
-    return {
-        "documents": docs,
-        "citations": [
-            {
-                "id": d["id"],
-                "index": d.get("index"),
-                "filename": d.get("filename"),
-                "chunk_index": d.get("chunk_index"),
-                "score": d["score"],
-                "text": d["text"],
-            }
-            for d in docs
-        ],
-    }
+    return {"documents": docs}

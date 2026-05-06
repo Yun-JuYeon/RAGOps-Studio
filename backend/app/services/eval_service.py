@@ -1,17 +1,3 @@
-"""평가(eval) 서비스 — RAGAS 기반 자동 평가.
-
-⚠️ 현재 WIP / 보류 상태.
-- `app/api/v1/router.py`에서 evaluation 라우터가 비활성화되어 있어 외부에서 호출되지 않는다.
-- `ragas`, `datasets` 패키지는 `pyproject.toml`에 주석 처리되어 있다.
-- 재개할 때 위 두 군데를 활성화하면 바로 동작.
-
-설계 메모:
-- 정답지 데이터셋 CRUD (Elasticsearch에 저장)
-- RAG 파이프라인을 데이터셋 전체에 대해 실행
-- RAGAS로 metric 계산 (sync API라 `asyncio.to_thread`로 감쌈)
-- 결과를 run 도큐먼트에 저장
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -84,7 +70,10 @@ class EvalService:
         return EvalDataset(**resp["_source"])
 
     async def delete_dataset(self, dataset_id: str) -> None:
-        await self.client.delete(index=DATASETS_INDEX, id=dataset_id, ignore=[404])
+        try:
+            await self.client.delete(index=DATASETS_INDEX, id=dataset_id)
+        except Exception:  # noqa: BLE001
+            pass
 
     # ---------- runs ----------
 
@@ -128,7 +117,6 @@ class EvalService:
     # ---------- execution ----------
 
     async def execute_run(self, run_id: str) -> None:
-        """백그라운드에서 호출되는 실제 실행 로직."""
         run = await self.get_run(run_id)
         if run is None:
             return
@@ -189,7 +177,6 @@ def _run_ragas(
     items: list[EvalItemResult],
     metric_names: list[str],
 ) -> tuple[list[dict[str, float]], dict[str, float]]:
-    """RAGAS evaluate 호출. 라이브러리 미설치 시에도 import-time에 죽지 않게 지연 import."""
     from datasets import Dataset  # type: ignore
     from ragas import evaluate  # type: ignore
     from ragas.metrics import (  # type: ignore

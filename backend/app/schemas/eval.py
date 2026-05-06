@@ -1,11 +1,3 @@
-"""평가(eval) 관련 Pydantic 모델.
-
-NOTE: RAGAS 평가 파이프라인은 현재 보류 상태(WIP).
-코드와 모델은 유지하되, FastAPI 라우터 등록은 비활성화되어 있다.
-재개 시점에는 `app/api/v1/router.py`의 evaluation 라인 주석을 풀고,
-`pyproject.toml`의 ragas/datasets 의존성도 함께 활성화할 것.
-"""
-
 from datetime import datetime
 from typing import Literal
 
@@ -13,8 +5,6 @@ from pydantic import BaseModel, Field
 
 
 class EvalItem(BaseModel):
-    """관리자가 제출하는 한 건의 정답지."""
-
     question: str
     ground_truth: str
 

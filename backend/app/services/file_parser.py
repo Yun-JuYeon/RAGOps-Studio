@@ -1,9 +1,3 @@
-"""업로드된 파일을 텍스트로 변환하는 유틸.
-
-지원 포맷: pdf, docx, txt, md, markdown
-지원 안 되는 확장자는 utf-8 디코드를 시도하고, 실패하면 UnsupportedFileType 발생.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -14,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class UnsupportedFileType(Exception):
-    """파일 포맷을 파싱할 수 없을 때."""
+    pass
 
 
 SUPPORTED_EXTENSIONS = {"pdf", "docx", "txt", "md", "markdown"}
@@ -27,7 +21,6 @@ def _ext(filename: str | None) -> str:
 
 
 def parse_bytes(filename: str | None, content: bytes) -> str:
-    """파일 바이트를 텍스트로 변환한다."""
     ext = _ext(filename)
 
     if ext == "pdf":

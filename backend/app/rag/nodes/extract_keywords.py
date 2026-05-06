@@ -1,9 +1,3 @@
-"""extract_keywords 노드.
-
-사용자 자연어 질문 → 검색용 키워드 (query rewriting).
-LLM 이 없거나 호출 실패 시 원본 질문을 그대로 사용한다.
-"""
-
 import logging
 
 from langchain_core.messages import HumanMessage
@@ -21,9 +15,6 @@ _PREFIX_NOISE = ("키워드:", "Keywords:", "검색어:")
 async def extract_keywords(state: RagState) -> RagState:
     question = state.get("question", "")
     llm = get_chat_model()
-    if llm is None:
-        logger.info("extract_keywords: LLM 미설정 → 원본 질문을 search_query 로 사용")
-        return {"search_query": question}
 
     try:
         result = await llm.ainvoke(

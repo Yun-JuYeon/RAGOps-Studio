@@ -2,6 +2,17 @@ from app.rag.graph import build_rag_graph
 from app.schemas.chat import ChatRequest, ChatResponse, Citation
 
 
+def _doc_to_citation(d: dict) -> Citation:
+    return Citation(
+        id=d["id"],
+        index=d.get("index"),
+        filename=d.get("filename"),
+        chunk_index=d.get("chunk_index"),
+        score=d["score"],
+        text=d["text"],
+    )
+
+
 class RagService:
     def __init__(self):
         self.graph = build_rag_graph()
@@ -20,10 +31,14 @@ class RagService:
                 "history": [m.model_dump() for m in req.messages],
             }
         )
+        documents = state.get("documents", [])
+        used_ids = set(state.get("used_doc_ids", []))
+        citations = [_doc_to_citation(d) for d in documents if d["id"] in used_ids]
+
         return ChatResponse(
             answer=state.get("answer", ""),
             search_query=state.get("search_query"),
-            citations=[Citation(**c) for c in state.get("citations", [])],
+            citations=citations,
         )
 
 

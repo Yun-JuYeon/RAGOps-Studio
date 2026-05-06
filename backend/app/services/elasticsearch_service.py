@@ -16,11 +16,6 @@ RRF_K = 60  # Reciprocal Rank Fusion 의 k 상수 (보통 60)
 
 
 def default_mapping() -> dict[str, Any]:
-    """기본 RAG 인덱스 매핑.
-
-    text는 BM25용 분석 필드, embedding은 dense_vector(cosine).
-    metadata는 dynamic으로 받는다.
-    """
     return {
         "mappings": {
             "properties": {
@@ -68,21 +63,15 @@ class ElasticsearchService:
         mappings: dict | None = None,
         index_settings: dict | None = None,
     ) -> None:
-        body: dict = {}
-        if mappings:
-            body["mappings"] = mappings
-        else:
-            # 기본 RAG 매핑 (text + dense_vector + metadata)
-            body.update(default_mapping())
+        body: dict = {"mappings": mappings} if mappings else default_mapping()
         if index_settings:
             body["settings"] = index_settings
-        await self.client.indices.create(index=name, body=body or None)
+        await self.client.indices.create(index=name, body=body)
 
     async def delete_index(self, name: str) -> None:
         await self.client.indices.delete(index=name, ignore_unavailable=True)
 
     async def clear_index(self, name: str) -> int:
-        """인덱스 매핑은 유지한 채 모든 도큐먼트만 삭제. 삭제된 도큐먼트 수 반환."""
         resp = await self.client.delete_by_query(
             index=name,
             body={"query": {"match_all": {}}},
@@ -92,7 +81,6 @@ class ElasticsearchService:
         return int(resp.get("deleted", 0))
 
     async def ensure_default_index(self, name: str | None = None) -> str:
-        """존재하지 않으면 기본 매핑으로 생성하고 인덱스 이름을 돌려준다."""
         index = name or settings.default_index
         exists = await self.client.indices.exists(index=index)
         if not exists:
@@ -176,10 +164,6 @@ class ElasticsearchService:
         self, index: str, req: SearchRequest
     ) -> tuple[list[SearchHit], int]:
         query_vector = await self.embedder.embed_query(req.query)
-        if query_vector is None:
-            # is_available 체크를 통과했는데 None이면 모순 — 방어적 에러
-            raise HTTPException(status_code=500, detail="임베딩 생성 실패")
-
         body: dict[str, Any] = {
             "size": req.top_k,
             "knn": {
@@ -205,13 +189,7 @@ class ElasticsearchService:
     async def _search_hybrid_rrf(
         self, index: str, req: SearchRequest
     ) -> tuple[list[SearchHit], int]:
-        """진짜 Hybrid: BM25 와 kNN 을 별도로 돌리고 RRF 로 머지.
-
-        ES 의 query+knn 단순 합산은 BM25 점수가 압도하는 문제가 있어,
-        rank 기반 RRF 로 결합한다.
-            score(d) = Σ_r 1 / (k + rank_r(d))
-        """
-        # 각 ranking 에서 top_k * 2 정도를 가져와 머지 풀을 넓힘
+        # BM25 와 kNN 을 별도로 돌리고 rank 기반 RRF 로 머지: score(d) = Σ_r 1 / (k + rank_r(d))
         pool = max(req.top_k * 2, 20)
 
         async def _bm25():
@@ -233,8 +211,6 @@ class ElasticsearchService:
 
         async def _knn():
             query_vector = await self.embedder.embed_query(req.query)
-            if query_vector is None:
-                raise HTTPException(status_code=500, detail="임베딩 생성 실패")
             knn: dict[str, Any] = {
                 "field": "embedding",
                 "query_vector": query_vector,
@@ -283,5 +259,4 @@ class ElasticsearchService:
 
 @lru_cache(maxsize=1)
 def get_es_service() -> ElasticsearchService:
-    """ES 서비스 싱글톤. 내부 client/embedder 가 싱글톤이므로 서비스도 한 번만 생성."""
     return ElasticsearchService(get_es_client(), get_embedding_service())

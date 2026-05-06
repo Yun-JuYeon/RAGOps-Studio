@@ -47,12 +47,6 @@ class DocumentService:
         req: DocumentIngestRequest,
         allow_no_embedding: bool = False,
     ) -> DocumentIngestResponse:
-        """문서를 청킹·임베딩 후 인덱싱.
-
-        embedder 가 없을 때:
-          - allow_no_embedding=False (기본): 명시적으로 400 에러
-          - allow_no_embedding=True: 임베딩 없이 BM25 전용으로 저장
-        """
         index = await self.es_service.ensure_default_index(req.index)
         chunks = _chunk_text(req.text, req.chunk_size, req.chunk_overlap)
         ids: list[str] = [str(uuid.uuid4()) for _ in chunks]
@@ -95,7 +89,6 @@ class DocumentService:
         return DocumentIngestResponse(index=index, chunks_indexed=len(ids), ids=ids)
 
     async def list_files(self, index: str | None = None) -> list[FileSummary]:
-        """metadata.filename 별로 청크 수를 집계."""
         idx = await self.es_service.ensure_default_index(index)
         resp = await self.client.search(
             index=idx,
@@ -119,7 +112,6 @@ class DocumentService:
         ]
 
     async def delete_file(self, filename: str, index: str | None = None) -> int:
-        """특정 filename에 속한 모든 청크를 삭제. 삭제된 청크 수 반환."""
         idx = await self.es_service.ensure_default_index(index)
         resp = await self.client.delete_by_query(
             index=idx,
@@ -134,7 +126,6 @@ class DocumentService:
         filename: str,
         index: str | None = None,
     ) -> FileDetail:
-        """특정 파일에 속한 모든 청크를 chunk_index 순으로 반환."""
         idx = await self.es_service.ensure_default_index(index)
         resp = await self.client.search(
             index=idx,

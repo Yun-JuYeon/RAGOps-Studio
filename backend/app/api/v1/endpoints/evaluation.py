@@ -1,10 +1,3 @@
-"""Evaluation endpoints — RAGAS 자동 평가.
-
-⚠️ 현재 WIP / 비활성화 상태.
-`app/api/v1/router.py`에서 이 라우터의 include가 주석 처리되어 있다.
-재개할 때 그 라인을 풀고, `pyproject.toml`의 ragas/datasets 의존성도 활성화할 것.
-"""
-
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from app.schemas.eval import EvalDataset, EvalDatasetCreate, EvalRun, EvalRunCreate

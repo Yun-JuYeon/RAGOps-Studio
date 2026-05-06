@@ -1,23 +1,26 @@
-"""LLM 인스턴스 헬퍼.
-
-ChatOpenAI 를 lazy 하게 만들어서 OPENAI_API_KEY 가 없을 때
-import 단계에서 죽지 않도록 한다. (반환값이 None 이면 호출자가 알아채야 함)
-"""
-
 from __future__ import annotations
 
 from typing import Any
 
+from pydantic import BaseModel, SecretStr
+
 from app.core.config import settings
 
 
-def get_chat_model() -> Any | None:
+def get_chat_model(schema: type[BaseModel] | None = None) -> Any:
     if not settings.openai_api_key:
-        return None
+        raise RuntimeError(
+            "LLM 모델을 초기화할 수 없습니다. "
+            "OPENAI_API_KEY 환경변수에 문제가 있습니다."
+        )
+    
     from langchain_openai import ChatOpenAI
 
-    return ChatOpenAI(
+    llm = ChatOpenAI(
         model=settings.llm_model,
-        api_key=settings.openai_api_key,
+        api_key=SecretStr(settings.openai_api_key),
         temperature=0,
     )
+    if schema is not None:
+        return llm.with_structured_output(schema)
+    return llm
